@@ -7,18 +7,48 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        /* Animations */
+        .fade-enter-active, .fade-leave-active {
+            transition: all 0.5s ease;
+        }
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .slide-up-enter-active, .slide-up-leave-active {
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .slide-up-enter-from {
+            opacity: 0;
+            transform: translateY(100px);
+        }
+        .slide-up-leave-to {
+            opacity: 0;
+            transform: translateY(-100px);
+        }
+
+        /* Custom styles */
         .upload-box {
             border: 2px dashed #cbd5e1;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         .upload-box:hover {
             border-color: #3b82f6;
+            background-color: #f8fafc;
         }
+        .upload-box.dragover {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+
         .shimmer {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
             background-size: 200% 100%;
@@ -28,168 +58,413 @@
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
+
+        .pulse-dot::before {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .progress-circle {
+            transform: rotate(-90deg);
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
         @media (max-width: 640px) {
             .bottom-nav {
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
             }
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body class="bg-gray-50">
-    <div id="app" class="min-h-screen pb-16 sm:pb-0">
-        <!-- Navigation -->
-        <nav class="bg-white shadow-sm fixed w-full top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <i class="bi bi-shield-check text-blue-600 text-2xl"></i>
-                        <span class="ml-2 text-xl font-semibold">TrafficWatch Pro</span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center bg-blue-50 px-3 py-1 rounded-full">
-                            <i class="bi bi-trophy-fill text-yellow-500 mr-2"></i>
-                            <span class="text-sm font-medium">{{points}} pts</span>
+    <div id="app" class="min-h-screen">
+        <!-- Welcome Screen -->
+        <transition name="fade" mode="out-in">
+            <div v-if="currentView === 'welcome'" class="gradient-bg min-h-screen flex items-center justify-center p-4">
+                <div class="text-center text-white max-w-md">
+                    <div class="floating mb-8">
+                        <div class="bg-white/20 backdrop-blur-lg rounded-full p-6 mx-auto w-24 h-24 flex items-center justify-center">
+                            <i class="bi bi-shield-check text-4xl text-white"></i>
                         </div>
-                        <span class="text-sm font-medium hidden sm:block">Level {{level}}</span>
                     </div>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
-            <div v-if="currentView === 'report'" class="space-y-6">
-                <!-- Quick Report Section -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-xl font-semibold mb-4 flex items-center">
-                        <i class="bi bi-exclamation-triangle text-red-500 mr-2"></i>
-                        Quick Report
-                    </h2>
                     
-                    <!-- Type Selection -->
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <button v-for="type in incidentTypes" 
-                                :key="type.name"
-                                @click="selectedType = type.name"
-                                :class="`p-3 rounded-lg border text-left flex items-center ${selectedType === type.name ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`">
-                            <i :class="`bi ${type.icon} mr-2 ${selectedType === type.name ? 'text-blue-500' : 'text-gray-400'}`"></i>
-                            <span class="text-sm">{{type.name}}</span>
-                        </button>
-                    </div>
-
-                    <!-- Upload Area -->
-                    <div class="upload-box p-6 rounded-lg text-center mb-4 bg-gray-50"
-                         @click="triggerFileInput"
-                         @drop.prevent="handleDrop"
-                         @dragover.prevent>
-                        <div v-if="!selectedFiles.length">
-                            <i class="bi bi-camera text-3xl text-gray-400"></i>
-                            <p class="mt-2 text-sm text-gray-600">Click or drag to upload photos/videos</p>
-                            <p class="text-xs text-gray-400 mt-1">Supports: JPG, PNG, MP4</p>
-                        </div>
-                        <div v-else class="flex flex-wrap gap-2">
-                            <div v-for="(file, index) in selectedFiles" 
-                                 :key="index"
-                                 class="relative">
-                                <img :src="filePreview(file)" 
-                                     class="w-20 h-20 object-cover rounded">
-                                <button @click.stop="removeFile(index)"
-                                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
-                                    ×
-                                </button>
+                    <h1 class="text-4xl font-bold mb-4">TrafficWatch Pro</h1>
+                    <p class="text-lg opacity-90 mb-8">Help make your city safer by reporting traffic violations and road issues</p>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex items-center justify-center space-x-3">
+                            <div class="bg-white/20 rounded-full p-2">
+                                <i class="bi bi-camera text-lg"></i>
                             </div>
+                            <span>Capture incidents easily</span>
                         </div>
-                        <input type="file" 
-                               ref="fileInput" 
-                               class="hidden" 
-                               accept="image/*,video/*" 
-                               multiple
-                               @change="handleFileSelect">
+                        <div class="flex items-center justify-center space-x-3">
+                            <div class="bg-white/20 rounded-full p-2">
+                                <i class="bi bi-geo-alt text-lg"></i>
+                            </div>
+                            <span>Auto-location detection</span>
+                        </div>
+                        <div class="flex items-center justify-center space-x-3">
+                            <div class="bg-white/20 rounded-full p-2">
+                                <i class="bi bi-trophy text-lg"></i>
+                            </div>
+                            <span>Earn points for contributions</span>
+                        </div>
                     </div>
-
-                    <!-- Description with Voice Input -->
-                    <div class="relative mb-4">
-                        <textarea v-model="description"
-                                  class="w-full p-3 border rounded-lg pr-10" 
-                                  placeholder="Describe the incident..."
-                                  rows="3"></textarea>
-                        <button @click="startVoiceInput"
-                                class="absolute right-2 top-2 text-gray-400 hover:text-blue-500">
-                            <i class="bi bi-mic-fill"></i>
-                        </button>
-                    </div>
-
-                    <!-- Location -->
-                    <div class="flex items-center mb-4 bg-gray-50 p-3 rounded-lg">
-                        <i class="bi bi-geo-alt text-blue-500"></i>
-                        <span class="ml-2 text-sm" :class="location ? 'text-gray-700' : 'text-gray-500'">
-                            {{location || 'Detecting location...'}}
-                        </span>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button @click="submitReport"
-                            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center">
-                        <span>Submit Report</span>
+                    
+                    <button @click="startApp" 
+                            class="bg-white text-blue-600 px-8 py-4 rounded-full font-semibold hover:bg-gray-50 transition transform hover:scale-105">
+                        Get Started
                         <i class="bi bi-arrow-right ml-2"></i>
                     </button>
                 </div>
+            </div>
+        </transition>
 
-                <!-- Recent Reports -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-semibold">Recent Reports</h2>
-                        <button class="text-blue-600 text-sm">View All</button>
+        <!-- Main App -->
+        <div v-if="currentView !== 'welcome' && currentView !== 'confirmation'" class="pb-16 sm:pb-0">
+            <!-- Enhanced Navigation -->
+            <nav class="bg-white shadow-lg fixed w-full top-0 z-50">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between h-16">
+                        <div class="flex items-center">
+                            <div class="bg-blue-600 p-2 rounded-lg">
+                                <i class="bi bi-shield-check text-white text-xl"></i>
+                            </div>
+                            <span class="ml-3 text-xl font-bold text-gray-800">TrafficWatch Pro</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-2 rounded-full text-white shadow-lg">
+                                <i class="bi bi-trophy-fill mr-2"></i>
+                                <span class="font-semibold">{{points}} pts</span>
+                            </div>
+                            <div class="hidden sm:flex items-center bg-blue-50 px-3 py-2 rounded-full">
+                                <div class="w-2 h-2 bg-green-500 rounded-full pulse-dot mr-2"></div>
+                                <span class="text-sm font-medium text-blue-700">Level {{level}}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="space-y-4">
-                        <div v-for="report in reports" :key="report.id" 
-                             class="border-b pb-4 last:border-b-0">
-                            <div class="flex items-start space-x-4">
-                                <img :src="report.image" alt="Report" class="w-20 h-20 object-cover rounded">
-                                <div class="flex-1">
-                                    <div class="flex justify-between items-start">
-                                        <p class="text-sm text-gray-600">{{report.description}}</p>
-                                        <span :class="`text-xs px-2 py-1 rounded ${report.status === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`">
-                                            {{report.status}}
-                                        </span>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16">
+                <transition name="slide-up" mode="out-in">
+                    <!-- Report View -->
+                    <div v-if="currentView === 'report'" class="space-y-8">
+                        <!-- Progress Indicator -->
+                        <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">Report Progress</h3>
+                                <span class="text-sm text-gray-500">{{getProgressPercent()}}% Complete</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                     :style="`width: ${getProgressPercent()}%`"></div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Report Section -->
+                        <div class="bg-white rounded-xl shadow-lg p-8 card-hover">
+                            <h2 class="text-2xl font-bold mb-6 flex items-center text-gray-800">
+                                <div class="bg-red-100 p-2 rounded-lg mr-3">
+                                    <i class="bi bi-exclamation-triangle text-red-600"></i>
+                                </div>
+                                Report Incident
+                            </h2>
+                            
+                            <!-- Type Selection -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Incident Type</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <button v-for="type in incidentTypes" 
+                                            :key="type.name"
+                                            @click="selectedType = type.name"
+                                            :class="`p-4 rounded-xl border-2 text-left flex items-center transition-all duration-200 ${selectedType === type.name ? 'border-blue-500 bg-blue-50 shadow-lg transform scale-105' : 'border-gray-200 hover:border-gray-300 hover:shadow-md'}`">
+                                        <div :class="`p-3 rounded-lg mr-4 ${selectedType === type.name ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`">
+                                            <i :class="`bi ${type.icon}`"></i>
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">{{type.name}}</span>
+                                            <p class="text-xs text-gray-500">{{type.description}}</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Enhanced Upload Area -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Evidence</label>
+                                <div class="upload-box p-8 rounded-xl text-center bg-gray-50"
+                                     :class="{ 'dragover': isDragging }"
+                                     @click="triggerFileInput"
+                                     @drop.prevent="handleDrop"
+                                     @dragover.prevent="isDragging = true"
+                                     @dragleave="isDragging = false">
+                                    <div v-if="!selectedFiles.length">
+                                        <div class="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                            <i class="bi bi-camera text-2xl text-blue-600"></i>
+                                        </div>
+                                        <p class="text-lg font-medium text-gray-700 mb-2">Upload Photos or Videos</p>
+                                        <p class="text-sm text-gray-500 mb-4">Drag and drop files here or click to browse</p>
+                                        <div class="flex justify-center space-x-4 text-xs text-gray-400">
+                                            <span>• JPG</span>
+                                            <span>• PNG</span>
+                                            <span>• MP4</span>
+                                            <span>• Max 10MB</span>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center mt-2">
-                                        <i class="bi bi-geo-alt text-gray-400"></i>
-                                        <span class="text-xs text-gray-500 ml-1">{{report.location}}</span>
-                                        <span class="text-xs text-gray-400 ml-2">{{report.time}}</span>
+                                    <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                        <div v-for="(file, index) in selectedFiles" 
+                                             :key="index"
+                                             class="relative group">
+                                            <img :src="filePreview(file)" 
+                                                 class="w-full h-24 object-cover rounded-lg">
+                                            <button @click.stop="removeFile(index)"
+                                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="bi bi-x text-sm"></i>
+                                            </button>
+                                        </div>
+                                        <button @click.stop="triggerFileInput" 
+                                                class="border-2 border-dashed border-gray-300 rounded-lg h-24 flex items-center justify-center hover:border-blue-400 transition-colors">
+                                            <i class="bi bi-plus text-2xl text-gray-400"></i>
+                                        </button>
+                                    </div>
+                                    <input type="file" 
+                                           ref="fileInput" 
+                                           class="hidden" 
+                                           accept="image/*,video/*" 
+                                           multiple
+                                           @change="handleFileSelect">
+                                </div>
+                            </div>
+
+                            <!-- Enhanced Description -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Description</label>
+                                <div class="relative">
+                                    <textarea v-model="description"
+                                              class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors" 
+                                              placeholder="Describe what you witnessed... (e.g., Vehicle ran red light, Double parking blocking lane)"
+                                              rows="4"></textarea>
+                                    <div class="absolute bottom-3 right-3 flex space-x-2">
+                                        <button @click="startVoiceInput"
+                                                :class="`p-2 rounded-lg transition-colors ${isListening ? 'bg-red-100 text-red-600' : 'text-gray-400 hover:text-blue-500 hover:bg-blue-50'}`">
+                                            <i :class="`bi ${isListening ? 'bi-mic-fill' : 'bi-mic'}`"></i>
+                                        </button>
+                                        <span class="text-xs text-gray-400 self-end">{{description.length}}/500</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Enhanced Location -->
+                            <div class="mb-8">
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">Location</label>
+                                <div class="flex items-center p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+                                    <div class="bg-green-500 p-2 rounded-lg mr-3">
+                                        <i class="bi bi-geo-alt text-white"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="font-medium text-green-800">
+                                            {{location || (locationLoading ? 'Detecting location...' : 'Location unavailable')}}
+                                        </span>
+                                        <p class="text-xs text-green-600">Automatically detected</p>
+                                    </div>
+                                    <button @click="getLocation" class="text-green-600 hover:text-green-700">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Enhanced Submit Button -->
+                            <button @click="submitReport"
+                                    :disabled="!canSubmit"
+                                    :class="`w-full py-4 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center justify-center ${canSubmit ? 'btn-primary text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`">
+                                <span v-if="!isSubmitting">Submit Report</span>
+                                <span v-else class="flex items-center">
+                                    <i class="bi bi-arrow-repeat animate-spin mr-2"></i>
+                                    Processing...
+                                </span>
+                                <i v-if="!isSubmitting" class="bi bi-send ml-2"></i>
+                            </button>
+                        </div>
+
+                        <!-- Enhanced Recent Reports -->
+                        <div class="bg-white rounded-xl shadow-lg p-8 card-hover">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold text-gray-800">Recent Community Reports</h2>
+                                <button class="text-blue-600 hover:text-blue-700 font-medium">View All</button>
+                            </div>
+                            <div class="space-y-6">
+                                <div v-for="report in reports" :key="report.id" 
+                                     class="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                    <div class="flex items-start space-x-4">
+                                        <img :src="report.image" alt="Report" class="w-24 h-24 object-cover rounded-xl">
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <p class="font-medium text-gray-800">{{report.description}}</p>
+                                                <span :class="`text-xs px-3 py-1 rounded-full font-medium ${getStatusClass(report.status)}`">
+                                                    {{report.status}}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                                <div class="flex items-center">
+                                                    <i class="bi bi-geo-alt mr-1"></i>
+                                                    <span>{{report.location}}</span>
+                                                </div>
+                                                <div class="flex items-center">
+                                                    <i class="bi bi-clock mr-1"></i>
+                                                    <span>{{report.time}}</span>
+                                                </div>
+                                                <div class="flex items-center">
+                                                    <i class="bi bi-heart text-red-400 mr-1"></i>
+                                                    <span>{{report.likes}}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Statistics View -->
+                    <div v-if="currentView === 'stats'" class="space-y-8">
+                        <div class="text-center mb-8">
+                            <h1 class="text-3xl font-bold text-gray-800 mb-2">Your Impact</h1>
+                            <p class="text-gray-600">See how you're helping make the community safer</p>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-white rounded-xl shadow-lg p-6 text-center card-hover">
+                                <div class="bg-blue-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                    <i class="bi bi-file-earmark-text text-2xl text-blue-600"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-2">24</h3>
+                                <p class="text-gray-600">Reports Submitted</p>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-lg p-6 text-center card-hover">
+                                <div class="bg-green-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                    <i class="bi bi-check-circle text-2xl text-green-600"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-2">18</h3>
+                                <p class="text-gray-600">Verified Reports</p>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-lg p-6 text-center card-hover">
+                                <div class="bg-yellow-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                                    <i class="bi bi-trophy text-2xl text-yellow-600"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-2">{{points}}</h3>
+                                <p class="text-gray-600">Total Points</p>
+                            </div>
+                        </div>
+                    </div>
+                </transition>
+            </main>
+
+            <!-- Enhanced Bottom Navigation -->
+            <nav class="fixed bottom-0 w-full bg-white bottom-nav sm:hidden border-t border-gray-200">
+                <div class="flex justify-around py-4">
+                    <button @click="currentView = 'report'"
+                            :class="`flex flex-col items-center transition-colors ${currentView === 'report' ? 'text-blue-600' : 'text-gray-400'}`">
+                        <i class="bi bi-plus-circle text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Report</span>
+                    </button>
+                    <button @click="currentView = 'stats'"
+                            :class="`flex flex-col items-center transition-colors ${currentView === 'stats' ? 'text-blue-600' : 'text-gray-400'}`">
+                        <i class="bi bi-graph-up text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Stats</span>
+                    </button>
+                    <button class="flex flex-col items-center text-gray-400">
+                        <i class="bi bi-person text-2xl mb-1"></i>
+                        <span class="text-xs font-medium">Profile</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Confirmation Screen -->
+        <transition name="fade" mode="out-in">
+            <div v-if="currentView === 'confirmation'" class="min-h-screen bg-green-50 flex items-center justify-center p-4">
+                <div class="text-center max-w-md">
+                    <div class="floating mb-8">
+                        <div class="bg-green-500 rounded-full p-8 mx-auto w-24 h-24 flex items-center justify-center shadow-lg">
+                            <i class="bi bi-check-lg text-4xl text-white"></i>
+                        </div>
+                    </div>
+                    
+                    <h1 class="text-3xl font-bold text-gray-800 mb-4">Report Submitted!</h1>
+                    <p class="text-lg text-gray-600 mb-8">Thank you for helping make our community safer. Your report has been submitted and will be reviewed shortly.</p>
+                    
+                    <div class="bg-white rounded-xl p-6 mb-8 shadow-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-gray-600">Points Earned</span>
+                            <span class="text-2xl font-bold text-green-600">+{{lastReportPoints}}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Total Points</span>
+                            <span class="text-xl font-semibold text-gray-800">{{points}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <button @click="submitAnother" 
+                                class="w-full bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition">
+                            Submit Another Report
+                        </button>
+                        <button @click="currentView = 'stats'" 
+                                class="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition">
+                            View My Stats
+                        </button>
+                    </div>
                 </div>
             </div>
-
-            <!-- Statistics View -->
-            <div v-if="currentView === 'stats'" class="space-y-6">
-                <!-- Stats cards here -->
-            </div>
-        </main>
-
-        <!-- Bottom Navigation (Mobile) -->
-        <nav class="fixed bottom-0 w-full bg-white bottom-nav sm:hidden">
-            <div class="flex justify-around py-3">
-                <button @click="currentView = 'report'"
-                        :class="`flex flex-col items-center ${currentView === 'report' ? 'text-blue-600' : 'text-gray-400'}`">
-                    <i class="bi bi-plus-circle text-xl"></i>
-                    <span class="text-xs mt-1">Report</span>
-                </button>
-                <button @click="currentView = 'stats'"
-                        :class="`flex flex-col items-center ${currentView === 'stats' ? 'text-blue-600' : 'text-gray-400'}`">
-                    <i class="bi bi-graph-up text-xl"></i>
-                    <span class="text-xs mt-1">Stats</span>
-                </button>
-                <button class="flex flex-col items-center text-gray-400">
-                    <i class="bi bi-person text-xl"></i>
-                    <span class="text-xs mt-1">Profile</span>
-                </button>
-            </div>
-        </nav>
+        </transition>
     </div>
 
     <script>
@@ -198,49 +473,97 @@
         createApp({
             data() {
                 return {
+                    currentView: 'welcome', // welcome, report, stats, confirmation
                     points: 150,
                     level: 3,
                     description: '',
                     location: '',
-                    currentView: 'report',
+                    locationLoading: false,
                     selectedType: '',
                     selectedFiles: [],
+                    isDragging: false,
+                    isListening: false,
+                    isSubmitting: false,
+                    lastReportPoints: 10,
                     incidentTypes: [
-                        { name: 'Illegal Parking', icon: 'bi-p-square' },
-                        { name: 'Traffic Violation', icon: 'bi-exclamation-diamond' },
-                        { name: 'Road Damage', icon: 'bi-cone-striped' },
-                        { name: 'Signal Issue', icon: 'bi-traffic-light' }
+                        { 
+                            name: 'Illegal Parking', 
+                            icon: 'bi-p-square',
+                            description: 'Double parking, no parking zones'
+                        },
+                        { 
+                            name: 'Traffic Violation', 
+                            icon: 'bi-exclamation-diamond',
+                            description: 'Running lights, speeding'
+                        },
+                        { 
+                            name: 'Road Damage', 
+                            icon: 'bi-cone-striped',
+                            description: 'Potholes, broken signs'
+                        },
+                        { 
+                            name: 'Signal Issue', 
+                            icon: 'bi-traffic-light',
+                            description: 'Broken traffic lights'
+                        }
                     ],
                     reports: [
                         {
                             id: 1,
-                            image: 'https://images.unsplash.com/photo-1566933293069-5f38b4b7d363',
-                            description: 'Double parking blocking traffic',
-                            location: 'Main Street',
+                            image: 'https://images.unsplash.com/photo-1566933293069-5f38b4b7d363?w=400',
+                            description: 'Double parking blocking traffic lane',
+                            location: 'Main Street & 5th Ave',
                             time: '10 minutes ago',
-                            status: 'Verified'
+                            status: 'Verified',
+                            likes: 12
                         },
                         {
                             id: 2,
-                            image: 'https://images.unsplash.com/photo-1597762470488-3877b1f538c6',
-                            description: 'Red light violation at intersection',
+                            image: 'https://images.unsplash.com/photo-1597762470488-3877b1f538c6?w=400',
+                            description: 'Vehicle ran red light at intersection',
                             location: 'Downtown Junction',
                             time: '25 minutes ago',
-                            status: 'Processing'
+                            status: 'Processing',
+                            likes: 8
+                        },
+                        {
+                            id: 3,
+                            image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400',
+                            description: 'Large pothole causing traffic issues',
+                            location: 'Oak Street',
+                            time: '1 hour ago',
+                            status: 'Resolved',
+                            likes: 15
                         }
                     ]
+                }
+            },
+            computed: {
+                canSubmit() {
+                    return this.description.trim() && this.selectedType && this.location && !this.isSubmitting
                 }
             },
             mounted() {
                 this.getLocation()
             },
             methods: {
+                startApp() {
+                    this.currentView = 'report'
+                },
+                getProgressPercent() {
+                    let progress = 0
+                    if (this.selectedType) progress += 25
+                    if (this.description.trim()) progress += 25
+                    if (this.selectedFiles.length > 0) progress += 25
+                    if (this.location) progress += 25
+                    return progress
+                },
                 triggerFileInput() {
                     this.$refs.fileInput.click()
                 },
                 handleFileSelect(event) {
                     const files = Array.from(event.target.files)
-                    this.selectedFiles.push(...files)
+                    this.selectedFiles.push(...files.slice(0, 5 - this.selectedFiles.length))
                 },
                 filePreview(file) {
                     return URL.createObjectURL(file)
@@ -249,26 +572,54 @@
                     this.selectedFiles.splice(index, 1)
                 },
                 handleDrop(event) {
+                    this.isDragging = false
                     const files = Array.from(event.dataTransfer.files)
-                    this.selectedFiles.push(...files)
+                    this.selectedFiles.push(...files.slice(0, 5 - this.selectedFiles.length))
                 },
                 getLocation() {
+                    this.locationLoading = true
                     if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(position => {
-                            this.location = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`
-                        })
+                        navigator.geolocation.getCurrentPosition(
+                            position => {
+                                // Simulate reverse geocoding
+                                setTimeout(() => {
+                                    this.location = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`
+                                    this.locationLoading = false
+                                }, 1000)
+                            },
+                            error => {
+                                this.location = 'Location unavailable'
+                                this.locationLoading = false
+                            }
+                        )
+                    } else {
+                        this.location = 'Geolocation not supported'
+                        this.locationLoading = false
                     }
                 },
                 startVoiceInput() {
-                    if ('webkitSpeechRecognition' in window) {
-                        const recognition = new webkitSpeechRecognition()
+                    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+                        const recognition = new SpeechRecognition()
+                        
                         recognition.continuous = false
                         recognition.interimResults = false
                         recognition.lang = 'en-US'
                         
+                        this.isListening = true
+                        
                         recognition.onresult = (event) => {
                             const text = event.results[0][0].transcript
                             this.description = text
+                            this.isListening = false
+                        }
+                        
+                        recognition.onerror = () => {
+                            this.isListening = false
+                        }
+                        
+                        recognition.onend = () => {
+                            this.isListening = false
                         }
                         
                         recognition.start()
@@ -277,24 +628,56 @@
                     }
                 },
                 submitReport() {
-                    if (!this.description || !this.selectedType) {
-                        alert('Please provide a description and select incident type')
-                        return
-                    }
+                    if (!this.canSubmit) return
                     
-                    // Simulating upload progress
-                    const submitBtn = document.querySelector('button')
-                    const originalText = submitBtn.innerHTML
-                    submitBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin"></i> Uploading...'
+                    this.isSubmitting = true
                     
+                    // Simulate API call
                     setTimeout(() => {
-                        alert('Report submitted successfully! +10 points')
-                        this.points += 10
+                        // Calculate points based on report completeness
+                        let earnedPoints = 10
+                        if (this.selectedFiles.length > 0) earnedPoints += 5
+                        if (this.description.length > 50) earnedPoints += 5
+                        
+                        this.lastReportPoints = earnedPoints
+                        this.points += earnedPoints
+                        
+                        // Add to recent reports
+                        const newReport = {
+                            id: Date.now(),
+                            image: this.selectedFiles.length > 0 ? this.filePreview(this.selectedFiles[0]) : 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400',
+                            description: this.description,
+                            location: this.location,
+                            time: 'Just now',
+                            status: 'Processing',
+                            likes: 0
+                        }
+                        this.reports.unshift(newReport)
+                        
+                        // Reset form
                         this.description = ''
                         this.selectedType = ''
                         this.selectedFiles = []
-                        submitBtn.innerHTML = originalText
-                    }, 1500)
+                        this.isSubmitting = false
+                        
+                        // Show confirmation
+                        this.currentView = 'confirmation'
+                    }, 2000)
+                },
+                submitAnother() {
+                    this.currentView = 'report'
+                },
+                getStatusClass(status) {
+                    switch(status) {
+                        case 'Verified':
+                            return 'bg-green-100 text-green-800'
+                        case 'Processing':
+                            return 'bg-yellow-100 text-yellow-800'
+                        case 'Resolved':
+                            return 'bg-blue-100 text-blue-800'
+                        default:
+                            return 'bg-gray-100 text-gray-800'
+                    }
                 }
             }
         }).mount('#app')
